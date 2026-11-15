@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>물마루 · 상하수도 설계 플랫폼</title>
+<meta name="description" content="물담(댐 용수공급 평가) · 물길(상수·우수·하수 관망해석) · 물꼬(노후하수관로 정비)를 하나로 묶은 웹 기반 상하수도 설계 플랫폼">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230f3d2c'/%3E%3Cpath d='M2 15.5c2.6 0 3.9-1.7 5.3-4.5C8.8 8 10.2 4.8 12 4.8s3.2 3.2 4.7 6.2c1.4 2.8 2.7 4.5 5.3 4.5' fill='none' stroke='%235cc98d' stroke-width='2.3' stroke-linecap='round'/%3E%3Cpath d='M2 19.5c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1' fill='none' stroke='%23ecf6f0' stroke-width='1.6' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E">
+<style>
+/* 물마루 B안(도화 그린). 외부 글꼴·스크립트 없음(사내망 대비). */
+:root {
+  --bar: #0f3d2c; --bar-line: #082a1e; --bar-text: #ecf6f0; --bar-muted: #9cc4ad; --accent: #5cc98d;
+  --deep: #2e8b57;            /* 흰 바탕 위 강조(버튼 등) */
+  --bg: #f3f6f4; --surface: #ffffff; --fg: #15231c; --muted: #5a6b62; --line: #dbe3de; --chip: #e7efea;
+  --font: "Pretendard", "Pretendard Variable", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── 공통 상단바 ── */
+.platform-bar { position: sticky; top: 0; z-index: 50; height: 40px; background: var(--bar); border-bottom: 1px solid var(--bar-line);
+  display: flex; align-items: center; gap: 14px; color: var(--bar-text); white-space: nowrap; overflow: hidden;
+  padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); }
+.platform-bar .brand { display: flex; align-items: center; gap: 7px; font-weight: 800; font-size: 15px; letter-spacing: -0.01em; text-decoration: none; color: var(--bar-text); }
+.platform-bar .sep { width: 1px; height: 18px; background: var(--bar-muted); opacity: .35; }
+.platform-bar nav { display: flex; height: 100%; }
+.platform-bar nav a { display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 13px; color: var(--bar-muted); text-decoration: none;
+  border-top: 2px solid transparent; border-bottom: 2px solid transparent; }
+.platform-bar nav a:hover { color: var(--bar-text); }
+.platform-bar nav a span { font-size: 12px; opacity: .85; }
+.platform-bar .home { margin-left: auto; font-size: 12px; color: var(--bar-text); font-weight: 700; text-decoration: none; border-bottom: 2px solid var(--accent); line-height: 36px; }
+@media (max-width: 720px) { .platform-bar nav a span { display: none; } }
+@media (max-width: 420px) { .platform-bar .home { display: none; } }
+
+/* ── 히어로 ── */
+.inner { max-width: 1080px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.hero { background: var(--bar); color: var(--bar-text); position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; inset: auto 0 0 0; height: 70px; pointer-events: none;
+  background: repeating-radial-gradient(ellipse 60px 14px at 50% 100%, transparent 0 9px, rgba(156,196,173,.10) 10px 11px); }
+.hero .inner { padding-block: 44px 40px; display: grid; gap: 22px; position: relative; z-index: 1; }
+.title { display: flex; align-items: center; gap: 14px; margin: 0; font-size: clamp(34px, 6vw, 52px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.title small { font-size: 15px; font-weight: 500; color: var(--bar-muted); letter-spacing: 0; align-self: flex-end; padding-bottom: 6px; }
+.lede { margin: 0; max-width: 46ch; font-size: clamp(16px, 2.1vw, 19px); color: var(--bar-text); text-wrap: balance; }
+.motto { margin: 0; color: var(--bar-muted); font-size: 14.5px; }
+.motto b { color: var(--accent); font-weight: 700; }
+
+.cycle { width: 100%; height: auto; display: block; }
+.cycle text { font-family: var(--font); }
+.cycle .node { cursor: pointer; }
+.cycle .node rect { transition: fill .2s; }
+.cycle .node:hover rect, .cycle .node:focus-visible rect { fill: #14513a; }
+.cycle-v { display: none; max-width: 340px; }
+@media (max-width: 640px) { .cycle-h { display: none; } .cycle-v { display: block; } }
+
+/* ── 카드 ── */
+main .inner { padding-block: 36px 20px; display: grid; gap: 18px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sec-head h2 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+.sec-head p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 12px; grid-template-rows: auto auto auto 1fr auto; min-width: 0; }
+.stage { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+.stage i { font-style: normal; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--chip); color: var(--bar); font-size: 12px; font-weight: 800; }
+.card h3 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.card h3 small { font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.meaning { margin: 0; font-size: 13.5px; color: var(--muted); padding: 8px 12px; background: var(--chip); border-radius: 8px; }
+.meaning b { color: var(--fg); }
+.card ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.card ul li::marker { color: var(--deep); }
+.foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 4px; }
+.open { display: inline-flex; align-items: center; gap: 6px; background: var(--bar); color: var(--bar-text); text-decoration: none; font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 8px; }
+.open:hover { background: #14513a; }
+.open svg { transition: transform .15s; }
+.open:hover svg { transform: translateX(2px); }
+.note { font-size: 12.5px; color: var(--muted); }
+
+/* ── 하단 ── */
+.points { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding-top: 12px; }
+@media (max-width: 900px) { .points { grid-template-columns: 1fr; } }
+.point { display: grid; gap: 4px; padding: 14px 0; border-top: 2px solid var(--bar); }
+.point b { font-size: 15px; }
+.point span { color: var(--muted); font-size: 13.5px; }
+footer { color: var(--muted); font-size: 12.5px; }
+footer .inner { padding-block: 24px 40px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media print { .platform-bar { display: none; } .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+
+<header class="platform-bar">
+  <a class="brand" href="./" aria-label="물마루 포털">
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15.5c2.6 0 3.9-1.7 5.3-4.5C8.8 8 10.2 4.8 12 4.8s3.2 3.2 4.7 6.2c1.4 2.8 2.7 4.5 5.3 4.5" fill="none" stroke="#5cc98d" stroke-width="2.3" stroke-linecap="round"/><path d="M2 19.5c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1" fill="none" stroke="#ecf6f0" stroke-width="1.6" stroke-linecap="round" opacity=".7"/></svg>
+    물마루
+  </a>
+  <span class="sep" aria-hidden="true"></span>
+  <nav aria-label="물마루 프로그램">
+    <a href="https://wonjejj-glitch.github.io/garam/">물담<span>댐 용수공급</span></a>
+    <a href="https://wonjejj-glitch.github.io/mulgil/">물길<span>관망해석</span></a>
+    <a href="https://wonjejj-glitch.github.io/mulkko/">물꼬<span>하수관로 정비</span></a>
+  </nav>
+  <a class="home" href="./" aria-current="page">포털</a>
+</header>
+
+<section class="hero">
+  <div class="inner">
+    <h1 class="title">
+      <svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15.5c2.6 0 3.9-1.7 5.3-4.5C8.8 8 10.2 4.8 12 4.8s3.2 3.2 4.7 6.2c1.4 2.8 2.7 4.5 5.3 4.5" fill="none" stroke="#5cc98d" stroke-width="2.1" stroke-linecap="round"/><path d="M2 19.5c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1" fill="none" stroke="#ecf6f0" stroke-width="1.4" stroke-linecap="round" opacity=".7"/></svg>
+      물마루<small>상하수도 설계 플랫폼</small>
+    </h1>
+    <p class="lede">수원에서 공급, 배출과 정비까지. 상하수도 물길 전체를 설치 없이 웹 브라우저에서 검토하고 설계합니다.</p>
+    <p class="motto"><b>물담</b>에 막아 담고, <b>물길</b>로 흘려 보내고, <b>물꼬</b>를 터서 내보낸다.</p>
+
+    <!-- 물순환 (가로) -->
+    <svg class="cycle cycle-h" viewBox="0 0 900 170" role="img" aria-label="물순환: 물담(수원·댐)에서 물길(상수 공급, 우수·하수 해석)을 거쳐 물꼬(하수관로 정비)로, 처리수는 다시 하천으로">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9cc4ad"/></marker>
+      </defs>
+      <g fill="none" stroke="#9cc4ad" stroke-width="1.6">
+        <path d="M226 62 H316" marker-end="url(#ah)"/>
+        <path d="M584 62 H674" marker-end="url(#ah)"/>
+        <path d="M784 104 C784 162, 116 162, 116 104" stroke-dasharray="4 6" marker-end="url(#ah)"/>
+      </g>
+      <a class="node" href="https://wonjejj-glitch.github.io/garam/" aria-label="물담 열기">
+        <rect x="6" y="20" width="220" height="84" rx="12" fill="#082a1e" stroke="#9cc4ad" stroke-opacity=".45"/>
+        <text x="116" y="44" text-anchor="middle" fill="#9cc4ad" font-size="12" font-weight="600">① 수원 · 저류</text>
+        <text x="116" y="70" text-anchor="middle" fill="#ecf6f0" font-size="21" font-weight="800">물담</text>
+        <text x="116" y="92" text-anchor="middle" fill="#9cc4ad" font-size="13">댐 용수공급 평가</text>
+      </a>
+      <a class="node" href="https://wonjejj-glitch.github.io/mulgil/" aria-label="물길 열기">
+        <rect x="320" y="20" width="264" height="84" rx="12" fill="#082a1e" stroke="#9cc4ad" stroke-opacity=".45"/>
+        <text x="452" y="44" text-anchor="middle" fill="#9cc4ad" font-size="12" font-weight="600">② 공급 · 배수</text>
+        <text x="452" y="70" text-anchor="middle" fill="#ecf6f0" font-size="21" font-weight="800">물길</text>
+        <text x="452" y="92" text-anchor="middle" fill="#9cc4ad" font-size="13">상수·우수·하수 관망해석</text>
+      </a>
+      <a class="node" href="https://wonjejj-glitch.github.io/mulkko/" aria-label="물꼬 열기">
+        <rect x="678" y="20" width="212" height="84" rx="12" fill="#082a1e" stroke="#9cc4ad" stroke-opacity=".45"/>
+        <text x="784" y="44" text-anchor="middle" fill="#9cc4ad" font-size="12" font-weight="600">③ 배출 · 정비</text>
+        <text x="784" y="70" text-anchor="middle" fill="#ecf6f0" font-size="21" font-weight="800">물꼬</text>
+        <text x="784" y="92" text-anchor="middle" fill="#9cc4ad" font-size="13">노후하수관로 정비</text>
+      </a>
+      <text x="450" y="166" text-anchor="middle" fill="#9cc4ad" font-size="12.5">처리수는 다시 하천으로</text>
+    </svg>
+
+    <!-- 물순환 (세로, 좁은 화면) -->
+    <svg class="cycle cycle-v" viewBox="0 0 340 330" role="img" aria-label="물순환: 물담에서 물길을 거쳐 물꼬로, 처리수는 다시 하천으로">
+      <defs>
+        <marker id="av" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9cc4ad"/></marker>
+      </defs>
+      <g fill="none" stroke="#9cc4ad" stroke-width="1.6">
+        <path d="M140 80 V108" marker-end="url(#av)"/>
+        <path d="M140 192 V220" marker-end="url(#av)"/>
+        <path d="M270 264 C330 264, 330 38, 270 38" stroke-dasharray="4 6" marker-end="url(#av)"/>
+      </g>
+      <a class="node" href="https://wonjejj-glitch.github.io/garam/" aria-label="물담 열기">
+        <rect x="10" y="4" width="260" height="72" rx="12" fill="#082a1e" stroke="#9cc4ad" stroke-opacity=".45"/>
+        <text x="140" y="34" text-anchor="middle" fill="#ecf6f0" font-size="20" font-weight="800">물담</text>
+        <text x="140" y="58" text-anchor="middle" fill="#9cc4ad" font-size="13">① 수원 · 댐 용수공급</text>
+      </a>
+      <a class="node" href="https://wonjejj-glitch.github.io/mulgil/" aria-label="물길 열기">
+        <rect x="10" y="116" width="260" height="72" rx="12" fill="#082a1e" stroke="#9cc4ad" stroke-opacity=".45"/>
+        <text x="140" y="146" text-anchor="middle" fill="#ecf6f0" font-size="20" font-weight="800">물길</text>
+        <text x="140" y="170" text-anchor="middle" fill="#9cc4ad" font-size="13">② 공급 · 관망해석</text>
+      </a>
+      <a class="node" href="https://wonjejj-glitch.github.io/mulkko/" aria-label="물꼬 열기">
+        <rect x="10" y="228" width="260" height="72" rx="12" fill="#082a1e" stroke="#9cc4ad" stroke-opacity=".45"/>
+        <text x="140" y="258" text-anchor="middle" fill="#ecf6f0" font-size="20" font-weight="800">물꼬</text>
+        <text x="140" y="282" text-anchor="middle" fill="#9cc4ad" font-size="13">③ 배출 · 하수관로 정비</text>
+      </a>
+      <text x="140" y="324" text-anchor="middle" fill="#9cc4ad" font-size="12">처리수는 다시 하천으로</text>
+    </svg>
+  </div>
+</section>
+
+<main>
+  <div class="inner">
+    <div class="sec-head">
+      <h2>세 프로그램</h2>
+      <p>모두 웹 브라우저에서 바로 열리며, 계산은 이 기기 안에서 이루어집니다.</p>
+    </div>
+
+    <div class="cards">
+      <article class="card">
+        <div class="stage"><i>1</i>수원 · 저류</div>
+        <h3>물담 <small>댐 용수공급 평가</small></h3>
+        <p class="meaning"><b>물담</b> · 물을 막는 담이자 물을 담는 곳</p>
+        <ul>
+          <li>전국 K-water 댐 34곳의 이수안전도·가뭄대응단계 평가</li>
+          <li>MyWater 공개 일자료와 수위-저수용량 곡선 기반</li>
+          <li>운영수위 변경 효과와 정수장 공급 가능성(수량·노선·사업비) 개략 검토</li>
+        </ul>
+        <div class="foot">
+          <a class="open" href="https://wonjejj-glitch.github.io/garam/">물담 열기 <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="stage"><i>2</i>공급 · 배수</div>
+        <h3>물길 <small>상수·우수·하수 관망해석</small></h3>
+        <p class="meaning"><b>물길</b> · 물이 흐르는 길</p>
+        <ul>
+          <li>EPANET 상수관망 · SWMM 우수·하수 수리해석</li>
+          <li>관망 오류 자동 검증과 설계기준 검토</li>
+          <li>수압·유속 주제도, 유향, 시계열 그래프, 종단면도</li>
+        </ul>
+        <div class="foot">
+          <a class="open" href="https://wonjejj-glitch.github.io/mulgil/">물길 열기 <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="stage"><i>3</i>배출 · 정비</div>
+        <h3>물꼬 <small>노후하수관로 정비</small></h3>
+        <p class="meaning"><b>물꼬</b> · 물이 드나드는 어귀, 막힌 흐름을 트다</p>
+        <ul>
+          <li>CCTV 정밀조사 조서 판독과 결함 병합</li>
+          <li>굴착·비굴착 VE 공법 판정</li>
+          <li>수량·개략공사비, 도면 주석(DXF), 설계보고서 초안 생성</li>
+        </ul>
+        <div class="foot">
+          <a class="open" href="https://wonjejj-glitch.github.io/mulkko/">물꼬 열기 <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          <span class="note">처음 열 때 20~60초 걸립니다</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="points">
+      <div class="point"><b>설치 없이</b><span>CAD·상용 해석 프로그램 없이 웹 브라우저에서 바로 실행</span></div>
+      <div class="point"><b>자료는 내 PC 안에</b><span>올린 파일은 서버로 전송되지 않고 브라우저 안에서 계산</span></div>
+      <div class="point"><b>국내 기준 반영</b><span>환경부 하수관로 매뉴얼, 국내 좌표계, 공공 수자원 자료</span></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="inner">
+    <span>물마루 · 도화엔지니어링 상하수도사업부</span>
+    <span>개략 검토용입니다. 설계 기준과 공식 수치는 관련 기준서와 보고서를 따릅니다.</span>
+  </div>
+</footer>
+
+</body>
+</html>
